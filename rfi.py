@@ -23,10 +23,32 @@ def _is_safe_url(url):
 
 
 def fetchimage(name):
-    if not _is_safe_url(name):
+    # Resolve hostname once and pin the IP to prevent DNS rebinding TOCTOU.
+    # The same resolution is used for both the safety check and the actual request,
+    # so an attacker cannot flip DNS between the two calls.
+    try:
+        parsed = urllib.parse.urlparse(name)
+        if parsed.scheme not in ("http", "https"):
+            return ""
+        hostname = parsed.hostname
+        if not hostname:
+            return ""
+        resolved_ip = socket.gethostbyname(hostname)
+        ip_obj = ipaddress.ip_address(resolved_ip)
+        if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local or ip_obj.is_reserved or ip_obj.is_multicast:
+            return ""
+        port = parsed.port
+        netloc = f"{resolved_ip}:{port}" if port else resolved_ip
+        pinned_url = urllib.parse.urlunparse(parsed._replace(netloc=netloc))
+    except Exception:
         return ""
     try:
-        file = requests.get(url=name, timeout=2, allow_redirects=False).text
+        file = requests.get(
+            url=pinned_url,
+            timeout=2,
+            allow_redirects=False,
+            headers={"Host": hostname},
+        ).text
     except Exception:
         file = ""
     return file
