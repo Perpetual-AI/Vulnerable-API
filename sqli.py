@@ -1,10 +1,12 @@
 import hashlib
 import logging
 import sqlite3
+import threading
 
 logger = logging.getLogger(__name__)
 
 conn = sqlite3.connect("vulns.db", check_same_thread=False)
+_conn_lock = threading.Lock()
 
 
 def _verify_password(stored_hash: str, provided: str) -> bool:
@@ -27,13 +29,14 @@ def sqlivuln(sqli):
     password = sqli.get("password", "noprovided")
 
     if username and password:
-        cur = conn.cursor()
-        try:
-            cur.execute("SELECT * FROM USERS WHERE USERNAME=?", (username,))
-            users = cur.fetchall()
-        except Exception:
-            logger.exception("DB error during authentication")
-            return {"msg": "Authentication failed"}, 200
+        with _conn_lock:
+            cur = conn.cursor()
+            try:
+                cur.execute("SELECT * FROM USERS WHERE USERNAME=?", (username,))
+                users = cur.fetchall()
+            except Exception:
+                logger.exception("DB error during authentication")
+                return {"msg": "Authentication failed"}, 200
         if users and _verify_password(users[0][1], password):
             return {"msg": f"Hello, {users[0][0]}"}, 200
         return {"msg": "Hello, unknown"}, 200
