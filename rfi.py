@@ -1,9 +1,33 @@
+import ipaddress
+import socket
+import urllib.parse
+
 import requests
 
-def fetchimage(name):
+
+def _is_safe_url(url):
+    """Return True only for http/https URLs that resolve to public IPs."""
     try:
-        file = requests.get(url=name, timeout=2, verify=False).text
-    except:
+        parsed = urllib.parse.urlparse(url)
+        if parsed.scheme not in ("http", "https"):
+            return False
+        hostname = parsed.hostname
+        if not hostname:
+            return False
+        ip = ipaddress.ip_address(socket.gethostbyname(hostname))
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
+            return False
+        return True
+    except Exception:
+        return False
+
+
+def fetchimage(name):
+    if not _is_safe_url(name):
+        return ""
+    try:
+        file = requests.get(url=name, timeout=2).text
+    except Exception:
         file = ""
     return file
 
