@@ -7,8 +7,8 @@ def sstinovuln():
 
 def sstivuln(ssti):
     exp = ssti.get("mathexp", "test")
-    test = Template("my temp: " + exp)
+    test = Template("my temp: {{ value }}")
     if exp:
-        return {"msg": test.render()}, 200
+        return {"msg": test.render(value=exp)}, 200
     else:
         return {"msg": f"Error"}, 400
