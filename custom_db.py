@@ -22,10 +22,7 @@ def setup_db():
         ins = f"INSERT INTO vulns VALUES ({vuln})"
         conn.execute(ins)
 
-    ins = f"INSERT INTO USERS VALUES (mike, kaines)"
-    conn.execute(ins)
-
-    ins = f"INSERT INTO USERS VALUES (admin, admin)"
-    conn.execute(ins)
+    conn.execute("INSERT INTO USERS VALUES (?,?)", ("mike", "kaines"))
+    conn.execute("INSERT INTO USERS VALUES (?,?)", ("admin", "admin"))
 
     conn.commit()
