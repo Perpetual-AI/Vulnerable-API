@@ -1,3 +1,4 @@
+import html
 from flask import request
 
 def hhinovuln():
@@ -7,7 +8,7 @@ def hhinovuln():
 def hhivuln(hhi):
     headerss = request.headers
     print(f"headers: {headerss}")
-    
+
     try:
         h  = headerss["Host"]
     except Exception as e:
@@ -15,6 +16,6 @@ def hhivuln(hhi):
         h = "temo.com"
 
     if headerss:
-        return {"msg": f"response, <a href='{h}'>"}, 200
+        return {"msg": f"response, <a href='{html.escape(h)}'>"}, 200
     else:
         return {"msg": f"failed"}, 400
