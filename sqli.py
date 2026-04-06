@@ -21,6 +21,6 @@ def sqlivuln(sqli):
         except Exception:
             logger.exception("DB error during authentication")
             return {"msg": "Authentication failed"}, 200
-        return {"msg": f"Hello, {users}"}, 200
+        return {"msg": f"Hello, {users[0][0] if users else 'unknown'}"}, 200
     else:
         return {"msg": f"Error"}, 400
