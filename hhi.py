@@ -1,6 +1,8 @@
 import html
 from flask import request
 
+ALLOWED_HOSTS = ["localhost", "localhost:8000", "yourdomain.com"]
+
 def hhinovuln():
     return f"This is hhi no vuln"
 
@@ -14,6 +16,9 @@ def hhivuln(hhi):
     except Exception as e:
         print(f"failed: {e}")
         h = "temo.com"
+
+    if h not in ALLOWED_HOSTS:
+        return {"msg": "failed"}, 400
 
     if headerss:
         return {"msg": f"response, <a href='{html.escape(h)}'>"}, 200

