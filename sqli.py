@@ -16,7 +16,8 @@ def sqlivuln(sqli):
             cur.execute("SELECT * FROM USERS WHERE USERNAME=? AND PASSWORD=?", (username, password))
             users = cur.fetchall()
         except Exception as e:
-            return {"msg": f"{e}"}, 200
+            print(f"[sqlivuln] DB error: {e}")
+            return {"msg": "Login failed"}, 401
         return {"msg": f"Hello, {users}"}, 200
     else:
         return {"msg": f"Error"}, 400
