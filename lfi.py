@@ -1,6 +1,13 @@
+import os as _os
+
+_BASE = _os.path.realpath(_os.path.join(_os.path.dirname(__file__), "files"))
+
 def fetchfile(name):
     try:
-        file = open(name).read()
+        resolved = _os.path.realpath(_os.path.join(_BASE, name))
+        if not resolved.startswith(_BASE + _os.sep):
+            return ""
+        file = open(resolved).read()
     except:
         file = ""
     return file
