@@ -1,3 +1,4 @@
+import os
 import sqlite3
 
 def setup_db():
@@ -22,10 +23,11 @@ def setup_db():
         ins = f"INSERT INTO vulns VALUES ({vuln})"
         conn.execute(ins)
 
-    ins = f"INSERT INTO USERS VALUES (mike, kaines)"
-    conn.execute(ins)
-
-    ins = f"INSERT INTO USERS VALUES (admin, admin)"
-    conn.execute(ins)
+    mike_password = os.environ.get("MIKE_PASSWORD")
+    admin_password = os.environ.get("ADMIN_PASSWORD")
+    if mike_password:
+        conn.execute("INSERT INTO USERS VALUES (?, ?)", ("mike", mike_password))
+    if admin_password:
+        conn.execute("INSERT INTO USERS VALUES (?, ?)", ("admin", admin_password))
 
     conn.commit()
