@@ -26,7 +26,7 @@ def fetchimage(name):
     if not _is_safe_url(name):
         return ""
     try:
-        file = requests.get(url=name, timeout=2).text
+        file = requests.get(url=name, timeout=2, allow_redirects=False).text
     except Exception:
         file = ""
     return file
