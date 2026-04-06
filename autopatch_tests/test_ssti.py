@@ -8,7 +8,12 @@ On the vulnerable code  → Template("my temp: " + exp)  the expression is
 compiled as template code and executed.
 On the fixed code       → Template("my temp: {{ value }}").render(value=exp)
 the expression is treated as a plain string and returned literally.
+
+Note: the response is also HTML-escaped (html.escape), so single quotes and
+angle brackets in payloads will appear in their escaped form in the output.
 """
+
+import html
 
 from ssti import sstivuln
 
@@ -29,8 +34,9 @@ def test_ssti_attack_payload_not_executed():
     result, status = sstivuln({"mathexp": ATTACK_PAYLOAD})
     msg = result["msg"]
 
-    # The raw payload must appear verbatim in the output, not be evaluated.
-    assert msg == f"my temp: {ATTACK_PAYLOAD}", (
+    # The raw payload must appear in the output, not be evaluated.
+    # html.escape() is applied to the rendered value, so compare against the escaped form.
+    assert msg == f"my temp: {html.escape(ATTACK_PAYLOAD)}", (
         f"SSTI payload was executed! Got: {msg!r}"
     )
     assert status == 200
@@ -47,7 +53,7 @@ def test_ssti_os_command_injection_not_executed():
 
     # Must not contain typical `id` output like "uid="
     assert "uid=" not in msg, f"OS command was executed via SSTI! Got: {msg!r}"
-    assert msg == f"my temp: {cmd_payload}"
+    assert msg == f"my temp: {html.escape(cmd_payload)}"
     assert status == 200
 
 
