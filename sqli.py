@@ -1,5 +1,6 @@
 import hashlib
 import logging
+import os
 import sqlite3
 import threading
 
@@ -7,6 +8,11 @@ logger = logging.getLogger(__name__)
 
 conn = sqlite3.connect("vulns.db", check_same_thread=False)
 _conn_lock = threading.Lock()
+
+# Dummy hash used when a username is not found, so _verify_password always runs
+# and both code paths take the same time (prevents username enumeration via timing).
+_DUMMY_SALT = os.urandom(16)
+_DUMMY_HASH = _DUMMY_SALT.hex() + ":" + os.urandom(32).hex()
 
 
 def _verify_password(stored_hash: str, provided: str) -> bool:
@@ -37,7 +43,9 @@ def sqlivuln(sqli):
             except Exception:
                 logger.exception("DB error during authentication")
                 return {"msg": "Authentication failed"}, 200
-        if users and _verify_password(users[0][1], password):
+        stored = users[0][1] if users else _DUMMY_HASH
+        valid = _verify_password(stored, password)
+        if users and valid:
             return {"msg": f"Hello, {users[0][0]}"}, 200
         return {"msg": "Hello, unknown"}, 200
     else:
