@@ -50,6 +50,18 @@ def test_rfi_public_url_allowed():
     assert "image data" in result["msg"]
 
 
+def test_rfi_redirect_to_private_ip_blocked():
+    """Open-redirect SSRF bypass must be blocked — FAILS on vulnerable code (allow_redirects=True)."""
+    mock_resp = MagicMock()
+    mock_resp.text = "IAM credentials"
+    with patch("rfi.socket.gethostbyname", return_value="93.184.216.34"), \
+         patch("rfi.requests.get", return_value=mock_resp) as mock_get:
+        rfi.rfivuln({"imagelink": "http://attacker.com/redirect"})
+        _, kwargs = mock_get.call_args
+        assert kwargs.get("allow_redirects") is False, \
+            "allow_redirects=False required to prevent SSRF via open redirect"
+
+
 def test_rfi_ssl_verification_enabled():
     """requests.get must be called without verify=False (TLS enforced)."""
     mock_resp = MagicMock()
