@@ -1,3 +1,4 @@
+import html
 import ipaddress
 import socket
 import urllib.parse
@@ -61,6 +62,6 @@ def rfivuln(rfi):
     filename = rfi.get("imagelink", "http://google.com")
 
     if filename:
-        return {"msg": f"response, {fetchimage(filename)}"}, 200
+        return {"msg": f"response, {html.escape(fetchimage(filename))}"}, 200
     else:
         return {"msg": f"Error"}, 400
