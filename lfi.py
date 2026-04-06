@@ -1,3 +1,7 @@
+import os
+
+_BASE_DIR = os.path.realpath(os.path.dirname(__file__))
+
 def fetchfile(name):
     try:
         file = open(name).read()
@@ -13,6 +17,9 @@ def lfivuln(lfi):
     filename = lfi.get("filename", "readme.txt")
 
     if filename:
-        return {"msg": f"response, {fetchfile(filename)}" }, 200
+        resolved = os.path.realpath(os.path.join(_BASE_DIR, filename))
+        if not resolved.startswith(_BASE_DIR + os.sep) and resolved != _BASE_DIR:
+            return {"msg": "Error"}, 400
+        return {"msg": f"response, {fetchfile(resolved)}" }, 200
     else:
         return {"msg": f"Error"} , 400
