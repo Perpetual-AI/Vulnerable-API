@@ -13,7 +13,7 @@ def sqlivuln(sqli):
     if username and password:
         cur = conn.cursor()
         try:
-            cur.execute(f"SELECT * FROM USERS WHERE USERNAME='{username}'")
+            cur.execute("SELECT * FROM USERS WHERE USERNAME=? AND PASSWORD=?", (username, password))
             users = cur.fetchall()
         except Exception as e:
             return {"msg": f"{e}"}, 200
