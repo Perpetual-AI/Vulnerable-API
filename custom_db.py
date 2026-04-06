@@ -32,7 +32,9 @@ def setup_db():
         ins = f"INSERT INTO vulns VALUES ({vuln})"
         conn.execute(ins)
 
-    conn.execute("INSERT INTO USERS VALUES (?,?)", ("mike", hash_password("kaines")))
-    conn.execute("INSERT INTO USERS VALUES (?,?)", ("admin", hash_password("admin")))
+    mike_password = os.environ.get("MIKE_PASSWORD") or os.urandom(16).hex()
+    admin_password = os.environ.get("ADMIN_PASSWORD") or os.urandom(16).hex()
+    conn.execute("INSERT INTO USERS VALUES (?,?)", ("mike", hash_password(mike_password)))
+    conn.execute("INSERT INTO USERS VALUES (?,?)", ("admin", hash_password(admin_password)))
 
     conn.commit()
