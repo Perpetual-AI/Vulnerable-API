@@ -1,7 +1,7 @@
 import html
 from flask import request
 
-ALLOWED_HOSTS = ["localhost", "localhost:8000", "yourdomain.com"]
+ALLOWED_HOSTS = ["localhost", "localhost:8000"]
 
 def hhinovuln():
     return f"This is hhi no vuln"
