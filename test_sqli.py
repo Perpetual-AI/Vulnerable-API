@@ -1,6 +1,6 @@
 import sqlite3
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 import sqli
 
 
@@ -45,6 +45,28 @@ def test_sqli_valid_credentials_succeed(test_db):
         result, status = sqli.sqlivuln({"username": "admin", "password": "secret"})
         assert status == 200
         assert "admin" in str(result["msg"])
+
+
+def test_sqli_exception_does_not_leak_schema():
+    """DB exception message must NOT be exposed to the client.
+
+    Mocks cursor.execute() to raise a realistic sqlite3.OperationalError that
+    names the USERS table — this is what the vulnerable handler returned verbatim.
+    The fix must return a generic 401 instead.
+    """
+    leak_msg = "no such column: USERS.USERNAME"
+    mock_cursor = MagicMock()
+    mock_cursor.execute.side_effect = sqlite3.OperationalError(leak_msg)
+    mock_conn = MagicMock()
+    mock_conn.cursor.return_value = mock_cursor
+
+    with patch.object(sqli, "conn", mock_conn):
+        result, status = sqli.sqlivuln({"username": "'", "password": "x"})
+        assert status == 401, f"Expected 401, got {status}"
+        assert result["msg"] == "Login failed", (
+            f"Raw DB exception leaked to client: {result['msg']}"
+        )
+        assert leak_msg not in str(result["msg"])
 
 
 def test_sqli_wrong_password_rejected(test_db):
