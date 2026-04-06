@@ -15,7 +15,7 @@ def _is_safe_url(url):
         if not hostname:
             return False
         ip = ipaddress.ip_address(socket.gethostbyname(hostname))
-        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
+        if not ip.is_global:
             return False
         return True
     except Exception:
@@ -35,7 +35,7 @@ def fetchimage(name):
             return ""
         resolved_ip = socket.gethostbyname(hostname)
         ip_obj = ipaddress.ip_address(resolved_ip)
-        if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local or ip_obj.is_reserved or ip_obj.is_multicast:
+        if not ip_obj.is_global:
             return ""
         port = parsed.port
         netloc = f"{resolved_ip}:{port}" if port else resolved_ip
