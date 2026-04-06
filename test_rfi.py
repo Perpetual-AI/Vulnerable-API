@@ -62,6 +62,34 @@ def test_rfi_redirect_to_private_ip_blocked():
             "allow_redirects=False required to prevent SSRF via open redirect"
 
 
+def test_rfi_dns_rebinding_toctou_blocked():
+    """DNS rebinding (TOCTOU) bypass must be blocked.
+
+    Attack vector:
+      1. socket.gethostbyname('evil.com') → '93.184.216.34' (public) — check passes.
+      2. If requests.get re-resolves 'evil.com', attacker flips DNS to 127.0.0.1.
+      3. Fix: requests.get must receive the pre-resolved IP, not the original hostname.
+
+    This test FAILS on the vulnerable code (requests.get receives the hostname)
+    and PASSES on the fixed code (requests.get receives the resolved IP).
+    """
+    mock_resp = MagicMock()
+    mock_resp.text = "internal data"
+
+    with patch("rfi.socket.gethostbyname", return_value="93.184.216.34"), \
+         patch("rfi.requests.get", return_value=mock_resp) as mock_get:
+        rfi.rfivuln({"imagelink": "http://evil.com/secret"})
+
+        assert mock_get.called, "requests.get should have been called for a public IP"
+        call_url = mock_get.call_args[1].get("url") or mock_get.call_args[0][0]
+        assert "evil.com" not in call_url, (
+            "requests.get must not use the original hostname — DNS rebinding possible"
+        )
+        assert "93.184.216.34" in call_url, (
+            "requests.get must use the pre-resolved IP to prevent a second DNS lookup"
+        )
+
+
 def test_rfi_ssl_verification_enabled():
     """requests.get must be called without verify=False (TLS enforced)."""
     mock_resp = MagicMock()
