@@ -11,6 +11,7 @@ Fix: Return only the username — never the raw database row.
 from unittest.mock import MagicMock, patch
 
 import sqli
+from custom_db import hash_password
 
 
 def test_successful_login_does_not_leak_password():
@@ -19,7 +20,7 @@ def test_successful_login_does_not_leak_password():
     Passes on fixed code: f"Hello, {users[0][0]}" → "Hello, admin"
     """
     mock_cursor = MagicMock()
-    mock_cursor.fetchall.return_value = [("admin", "admin")]
+    mock_cursor.fetchall.return_value = [("admin", hash_password("admin"))]
     mock_conn = MagicMock()
     mock_conn.cursor.return_value = mock_cursor
 
@@ -38,7 +39,7 @@ def test_successful_login_does_not_leak_password():
 def test_successful_login_does_not_leak_arbitrary_password():
     """Verify the fix holds for non-trivial passwords, not just 'admin'."""
     mock_cursor = MagicMock()
-    mock_cursor.fetchall.return_value = [("bob", "s3cr3t!P@ss")]
+    mock_cursor.fetchall.return_value = [("bob", hash_password("s3cr3t!P@ss"))]
     mock_conn = MagicMock()
     mock_conn.cursor.return_value = mock_cursor
 

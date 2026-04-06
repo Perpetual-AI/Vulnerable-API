@@ -11,6 +11,7 @@ On the fixed code parameterized queries prevent both by treating the input as
 data, not SQL.
 """
 
+from custom_db import hash_password
 from sqli import sqlivuln, conn
 
 
@@ -28,7 +29,7 @@ def _seed_user(username: str = "alice", password: str = "secret123") -> None:
     )
     cur.execute(
         "INSERT INTO USERS (USERNAME, PASSWORD) VALUES (?, ?)",
-        (username, password),
+        (username, hash_password(password)),
     )
     conn.commit()
 
