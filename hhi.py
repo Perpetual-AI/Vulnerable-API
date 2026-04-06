@@ -21,6 +21,6 @@ def hhivuln(hhi):
         return {"msg": "failed"}, 400
 
     if headerss:
-        return {"msg": f"response, <a href='{html.escape(h)}'>"}, 200
+        return {"msg": f"response, <a href='http://{html.escape(h)}'>"}, 200
     else:
         return {"msg": f"failed"}, 400
